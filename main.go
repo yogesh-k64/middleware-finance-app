@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -24,11 +23,6 @@ var DummyHandouts = []Handout{
 var db *sql.DB
 
 func initDb() {
-	// load .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("error loading .env file")
-	}
 
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {
