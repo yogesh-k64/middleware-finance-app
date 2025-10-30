@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "9000:9000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:finance-app-database@db.kfgcpuoppukihxqbfhaq.supabase.co:5432/postgres
+      - PORT=9000
+    working_dir: /app
+    restart: unless-stopped

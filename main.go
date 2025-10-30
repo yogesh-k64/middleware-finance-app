@@ -1,13 +1,18 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
-var DummyHandouts = []Handouts{
+var DummyHandouts = []Handout{
 	{
 		Name:   "yogesh",
 		Date:   time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -16,30 +21,56 @@ var DummyHandouts = []Handouts{
 	},
 }
 
-func main() {
+var db *sql.DB
 
-	// localhost:9000/handouts
-	http.HandleFunc("/handouts", getHandouts)
-
-	fmt.Println("service started on localhost:9000")
-	if err := http.ListenAndServe(":9000", nil); err != nil {
-		
-		fmt.Println("failed to start server on localhost:9000")
+func initDb() {
+	// load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("error loading .env file")
 	}
+
+	databaseUrl := os.Getenv("DATABASE_URL")
+	if databaseUrl == "" {
+		log.Fatal("database url is empty!!")
+	}
+	fmt.Printf("databaseUrl: %#v\n", databaseUrl)
+
+	log.Println("connecting to database")
+
+	var errDB error
+
+	db, errDB := sql.Open("postgres", databaseUrl)
+
+	if errDB != nil {
+		log.Fatal("failed database connection")
+	}
+
+	errPingDB := db.Ping()
+	if errPingDB != nil {
+		log.Fatal("failed to ping database")
+	}
+
+	log.Println("Successfully connected to database")
 
 }
 
-func getHandouts(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	resp, err := json.Marshal(DataResp{
-		D:   DummyHandouts,
-		Msg: "success",
-	})
+func main() {
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	initDb()
+	defer db.Close()
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9000"
 	}
 
-	w.Write(resp)
+	http.HandleFunc("/handouts", getHandouts)
+
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+
+		log.Fatal("failed to start server on :9000")
+	}
+	log.Printf("service started on:%s\n", port)
+
 }
