@@ -37,11 +37,13 @@ func initDb() {
 	db, errDB := sql.Open("postgres", databaseUrl)
 
 	if errDB != nil {
+		fmt.Printf("errDB: %#v\n", errDB)
 		log.Fatal("failed database connection")
 	}
 
 	errPingDB := db.Ping()
 	if errPingDB != nil {
+		fmt.Printf("errPingDB: %#v\n", errPingDB)
 		log.Fatal("failed to ping database")
 	}
 
