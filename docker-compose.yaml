@@ -1,11 +1,15 @@
+version: "3.9"
+
 services:
   app:
     build: .
     ports:
-      - "${PORT}:${PORT}"
+      - "${PORT:-8080}:${PORT:-8080}" # defaults to 8080 if not set
+    env_file:
+      - .env                        # <-- ensures .env is loaded
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - PORT=${PORT}
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: ${PORT:-8080}
     working_dir: /app
     restart: no
     dns:
