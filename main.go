@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -58,7 +59,7 @@ func initDb() {
 	}
 
 	// Debug: Check if URL has quotes
-	log.Printf("URL length: %d", len(databaseUrl))
+	log.Printf("URL length: %d and database %s", len(databaseUrl), databaseUrl)
 	log.Printf("First character: %q", databaseUrl[0])
 	log.Printf("Last character: %q", databaseUrl[len(databaseUrl)-1])
 
@@ -72,6 +73,7 @@ func initDb() {
 
 	var err error
 	db, err = sql.Open("postgres", databaseUrl)
+	fmt.Printf("db: %#v\n", db)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
