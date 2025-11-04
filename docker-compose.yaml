@@ -7,4 +7,13 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - PORT=${PORT}
     working_dir: /app
-    restart: unless-stopped
+    restart: no
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -23,67 +24,50 @@ var DummyHandouts = []Handout{
 
 var db *sql.DB
 
-// func initDb() {
-
-// 	databaseUrl := os.Getenv("DATABASE_URL")
-// 	if databaseUrl == "" {
-// 		log.Fatal("database url is empty!!")
-// 	}
-// 	fmt.Printf("databaseUrl: %#v\n", databaseUrl)
-
-// 	log.Println("connecting to database")
-
-// 	var errDB error
-
-// 	db, errDB := sql.Open("postgres", databaseUrl)
-
-// 	if errDB != nil {
-// 		fmt.Printf("errDB: %#v\n", errDB)
-// 		log.Fatal("failed database connection")
-// 	}
-
-// 	errPingDB := db.Ping()
-// 	if errPingDB != nil {
-// 		fmt.Printf("errPingDB: %#v\n", errPingDB)
-// 		log.Fatal("failed to ping database")
-// 	}
-
-// 	log.Println("Successfully connected to database")
-
-// }
-
 func initDb() {
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
 	}
 
-	// Debug: Check if URL has quotes
-	log.Printf("URL length: %d and database %s", len(databaseUrl), databaseUrl)
-	log.Printf("First character: %q", databaseUrl[0])
-	log.Printf("Last character: %q", databaseUrl[len(databaseUrl)-1])
+	log.Printf("Using database URL: %s", databaseUrl)
 
-	// Remove quotes if they exist
-	if strings.HasPrefix(databaseUrl, `"`) && strings.HasSuffix(databaseUrl, `"`) {
-		log.Println("⚠️  Removing quotes from DATABASE_URL")
-		databaseUrl = strings.Trim(databaseUrl, `"`)
+	// Ensure sslmode=require
+	if !strings.Contains(databaseUrl, "sslmode=") {
+		if strings.Contains(databaseUrl, "?") {
+			databaseUrl += "&sslmode=require"
+		} else {
+			databaseUrl += "?sslmode=require"
+		}
 	}
 
-	log.Printf("Connecting to database...")
+	// 🧠 Force IPv4
+	net.DefaultResolver.PreferGo = true
+	net.DefaultResolver.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+		d := net.Dialer{Timeout: 5 * time.Second}
+		return d.DialContext(ctx, "tcp4", address)
+	}
+
+	log.Println("Connecting to database...")
 
 	var err error
 	db, err = sql.Open("postgres", databaseUrl)
-	fmt.Printf("db: %#v\n", db)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+	// Retry with backoff (helps with slow DNS)
+	for i := 1; i <= 5; i++ {
+		err = db.Ping()
+		if err == nil {
+			log.Println("✅ Successfully connected to database")
+			return
+		}
+		log.Printf("⚠️  Ping attempt %d failed: %v", i, err)
+		time.Sleep(time.Duration(i) * time.Second)
 	}
 
-	log.Println("✅ Successfully connected to database")
+	log.Fatalf("❌ Failed to ping database after retries: %v", err)
 }
 
 func main() {
