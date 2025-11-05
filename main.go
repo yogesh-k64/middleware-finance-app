@@ -67,7 +67,17 @@ func main() {
 		port = "9000"
 	}
 
-	http.HandleFunc("/handouts", getHandouts)
+	http.HandleFunc("/handouts", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			getHandouts(w, r)
+		case http.MethodPost:
+			postHandouts(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	// http.HandleFunc("/handouts", getHandouts)
 
 	log.Printf("service started on:%s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
