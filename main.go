@@ -49,6 +49,15 @@ func initDb() {
 		return d.DialContext(ctx, "tcp4", address)
 	}
 
+	net.DefaultResolver = &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{}
+			// Google DNS (8.8.8.8) or Cloudflare DNS (1.1.1.1)
+			return d.DialContext(ctx, "udp", "8.8.8.8:53")
+		},
+	}
+
 	log.Println("Connecting to database...")
 
 	var err error
