@@ -56,6 +56,12 @@ func initDb() {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := db.PingContext(ctx); err != nil {
+		log.Fatalf("Error pinging DB: %v", err)
+	}
 
 	// Retry with backoff (helps with slow DNS)
 	for i := 1; i <= 5; i++ {
