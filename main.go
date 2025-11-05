@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -69,8 +70,49 @@ func initDb() {
 
 	log.Fatalf("❌ Failed to ping database after retries: %v", err)
 }
+func debugResolve(host string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Try the default resolver
+	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil {
+		fmt.Printf("DEBUG: LookupIPAddr failed: %v\n", err)
+	} else {
+		for _, a := range addrs {
+			fmt.Printf("DEBUG: LookupIPAddr: %s -> %s\n", host, a.String())
+		}
+	}
+
+	// Try IPv4-only lookup
+	ipv4s, err := net.DefaultResolver.LookupIP(ctx, "ip4", host)
+	if err != nil {
+		fmt.Printf("DEBUG: Lookup ip4 failed: %v\n", err)
+	} else {
+		for _, a := range ipv4s {
+			fmt.Printf("DEBUG: ip4: %s -> %s\n", host, a.String())
+		}
+	}
+
+	// Try IPv6-only lookup
+	ipv6s, err := net.DefaultResolver.LookupIP(ctx, "ip6", host)
+	if err != nil {
+		fmt.Printf("DEBUG: Lookup ip6 failed: %v\n", err)
+	} else {
+		for _, a := range ipv6s {
+			fmt.Printf("DEBUG: ip6: %s -> %s\n", host, a.String())
+		}
+	}
+
+	// Print relevant envs
+	fmt.Println("DEBUG: GODEBUG =", os.Getenv("GODEBUG"))
+	if v := os.Getenv("RAILWAY_DNS"); v != "" {
+		fmt.Println("DEBUG: RAILWAY_DNS =", v)
+	}
+}
 
 func main() {
+	debugResolve("aws-1-ap-southeast-2.pooler.supabase.com")
 
 	initDb()
 	defer db.Close()
@@ -82,10 +124,10 @@ func main() {
 
 	http.HandleFunc("/handouts", getHandouts)
 
+	log.Printf("service started on:%s\n", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 
 		log.Fatal("failed to start server on :9000")
 	}
-	log.Printf("service started on:%s\n", port)
 
 }
