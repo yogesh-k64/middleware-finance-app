@@ -72,7 +72,11 @@ func main() {
 		case http.MethodGet:
 			getHandouts(w, r)
 		case http.MethodPost:
-			postHandouts(w, r)
+			postHandout(w, r)
+		case http.MethodPut:
+			putHandout(w, r)
+		case http.MethodDelete:
+			deleteHandout(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

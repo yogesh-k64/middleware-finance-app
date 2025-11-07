@@ -23,3 +23,7 @@ type UpdateDataResp struct {
 	D   Handout `json:"data"`
 	Msg string  `json:"msg"`
 }
+
+type MsgResp struct {
+	Msg string `json:"msg"`
+}
