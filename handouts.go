@@ -3,23 +3,33 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func getHandouts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	rows, err := db.Query(GET_HANDOUTS)
+	rows, err := db.Query(GET_HANDOUTS_WITH_USERS)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
+
 	var handouts []Handout
 
 	for rows.Next() {
 		var handout Handout
-		err := rows.Scan(&handout.ID, &handout.Name, &handout.Date, &handout.Amount, &handout.Nominee, &handout.Address, &handout.Mobile)
+
+		err = rows.Scan(
+			&handout.ID, &handout.Date, &handout.Amount,
+			&handout.CreatedAt, &handout.UpdatedAt,
+			&handout.User.ID, &handout.User.Address, &handout.User.CreatedAt, &handout.User.Info, &handout.User.Mobile,
+			&handout.User.Name, &handout.User.ReferredBy, &handout.User.UpdatedAt,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -28,14 +38,44 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 		handouts = append(handouts, handout)
 	}
 
-	resp := GetDataResp{
+	if err = rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := DataResp[[]Handout]{
 		D:   handouts,
 		Msg: "success",
 	}
 	json.NewEncoder(w).Encode(resp)
 }
 
-func postHandout(w http.ResponseWriter, r *http.Request) {
+func getHandout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	var handout Handout
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		return
+	}
+	err = db.QueryRow(GET_HANDOUT_BY_ID, id).Scan(&handout.ID, &handout.Date, &handout.Amount,
+		&handout.CreatedAt, &handout.UpdatedAt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := DataResp[Handout]{
+		D:   handout,
+		Msg: "success",
+	}
+	json.NewEncoder(w).Encode(resp)
+}
+
+func createHandout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -44,59 +84,39 @@ func postHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var handout Handout
+	var handout HandoutUpdate
 	err := json.NewDecoder(r.Body).Decode(&handout)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	if handout.Name == "" {
-		http.Error(w, "name cannot be empty", http.StatusBadRequest)
+	err = validateHandout(handout)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if handout.Date.IsZero() {
-		http.Error(w, "date cannot be empty", http.StatusBadRequest)
-		return
-	}
-
-	if handout.Amount <= 0 {
-		http.Error(w, "enter a valid amount", http.StatusBadRequest)
-		return
-	}
-
-	if handout.Mobile < 1000000000 || handout.Mobile > 9999999999 {
-		http.Error(w, "enter a valid mobile number", http.StatusBadRequest)
-		return
-	}
-
-	// name, date, amount, nominee, address, mobile
+	var respHandout Handout
 
 	dbErr := db.QueryRow(
-		POST_HANDOUTS,
-		handout.Name,
+		CREATE_HANDOUTS,
 		handout.Date,
 		handout.Amount,
-		handout.Nominee,
-		handout.Address,
-		handout.Mobile).Scan(
-		&handout.ID,
-		&handout.Name,
-		&handout.Date,
-		&handout.Amount,
-		&handout.Nominee,
-		&handout.Address,
-		&handout.Mobile,
-		&handout.CreatedAt,
-		&handout.UpdatedAt,
+		handout.UserId,
+		handout.NomineeId,
+	).Scan(
+		&respHandout.ID,
+		&respHandout.Date,
+		&respHandout.Amount,
+		&respHandout.CreatedAt,
+		&respHandout.UpdatedAt,
 	)
 	if dbErr != nil {
 		http.Error(w, dbErr.Error(), http.StatusInternalServerError)
 		return
 	}
-	resp := UpdateDataResp{
-		D:   handout,
+	resp := DataResp[Handout]{
+		D:   respHandout,
 		Msg: "Handout created successfully",
 	}
 	json.NewEncoder(w).Encode(resp)
@@ -107,14 +127,14 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
-	// Get ID from query parameters
-	id := r.URL.Query().Get("id")
-	if id == "" {
+	if id == 0 {
 		http.Error(w, "ID parameter is required", http.StatusBadRequest)
 		return
 	}
@@ -153,55 +173,25 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var handout Handout
+	var handout HandoutUpdate
 	err := json.NewDecoder(r.Body).Decode(&handout)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Get ID from query parameters
-
-	if handout.ID == 0 {
-		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+	err = validateHandout(handout)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Validation (same as POST)
-	if handout.Name == "" {
-		http.Error(w, "name cannot be empty", http.StatusBadRequest)
-		return
-	}
-	if handout.Date.IsZero() {
-		http.Error(w, "date cannot be empty", http.StatusBadRequest)
-		return
-	}
-	if handout.Amount <= 0 {
-		http.Error(w, "enter a valid amount", http.StatusBadRequest)
-		return
-	}
-	if handout.Mobile < 1000000000 || handout.Mobile > 9999999999 {
-		http.Error(w, "enter a valid mobile number", http.StatusBadRequest)
-		return
-	}
-
-	err = db.QueryRow(UPDATE_HANDOUT,
-		handout.Name,
+	_, err = db.Exec(
+		UPDATE_HANDOUT,
 		handout.Date,
 		handout.Amount,
-		handout.Nominee,
-		handout.Address,
-		handout.Mobile,
-		handout.ID).Scan(
-		&handout.ID,
-		&handout.Name,
-		&handout.Date,
-		&handout.Amount,
-		&handout.Nominee,
-		&handout.Address,
-		&handout.Mobile,
-		&handout.CreatedAt,
-		&handout.UpdatedAt,
+		handout.NomineeId,
+		handout.UserId,
+		handout.ID,
 	)
 
 	if err != nil {
@@ -209,8 +199,7 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := UpdateDataResp{
-		D:   handout,
+	resp := MsgResp{
 		Msg: "Handout updated successfully",
 	}
 	json.NewEncoder(w).Encode(resp)

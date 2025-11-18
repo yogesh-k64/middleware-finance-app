@@ -12,6 +12,9 @@ services:
       PORT: ${PORT:-8080}
     working_dir: /app
     restart: no
+    volumes:
+      - .:/app
+    command: sh -c "go install github.com/cosmtrek/air@v1.49.0 && air"
     dns:
       - 8.8.8.8
       - 1.1.1.1

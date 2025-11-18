@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
@@ -66,27 +67,24 @@ func main() {
 	if port == "" {
 		port = "9000"
 	}
+	r := mux.NewRouter()
 
-	http.HandleFunc("/handouts", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			getHandouts(w, r)
-		case http.MethodPost:
-			postHandout(w, r)
-		case http.MethodPut:
-			putHandout(w, r)
-		case http.MethodDelete:
-			deleteHandout(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-	// http.HandleFunc("/handouts", getHandouts)
+	r.HandleFunc("/users", getAllUsers).Methods("GET")
+	r.HandleFunc("/users", createUser).Methods("POST")
+	r.HandleFunc("/users/{id}", getUser).Methods("GET")
+	r.HandleFunc("/users/{id}", updateUser).Methods("PUT")
+	r.HandleFunc("/users/{id}", deleteUser).Methods("DELETE")
+	r.HandleFunc("/users/{id}/referral", linkUserReferral).Methods("POST")
+	r.HandleFunc("/handouts", getHandouts).Methods("GET")
+	r.HandleFunc("/handouts", createHandout).Methods("POST")
+	r.HandleFunc("/handouts/{id}", getHandout).Methods("GET")
+	r.HandleFunc("/handouts", putHandout).Methods("PUT")
+	r.HandleFunc("/handouts", deleteHandout).Methods("DELETE")
 
 	log.Printf("service started on:%s\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 
-		log.Fatal("failed to start server on :9000")
+		log.Fatalf("failed to start server on :%s", port)
 	}
 
 }
