@@ -28,4 +28,4 @@ const CREATE_HANDOUTS = "INSERT INTO handouts (date, amount, user_id, nominee_id
 
 const DELETE_HANDOUTS = "DELETE FROM handouts WHERE id = $1"
 
-const UPDATE_HANDOUT = `UPDATE handouts SET date = $1, amount = $2, nominee_id = $4 WHERE id = $5`
+const UPDATE_HANDOUT = `UPDATE handouts SET date = $1, amount = $2, nominee_id = $3, user_id = $4 WHERE id = $5`

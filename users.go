@@ -217,6 +217,10 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	// Delete user
 	_, err = db.Exec(DELETE_USER, userID)
 	if err != nil {
+		if isForeignKeyViolation(err) {
+			http.Error(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

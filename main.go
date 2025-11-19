@@ -78,8 +78,8 @@ func main() {
 	r.HandleFunc("/handouts", getHandouts).Methods("GET")
 	r.HandleFunc("/handouts", createHandout).Methods("POST")
 	r.HandleFunc("/handouts/{id}", getHandout).Methods("GET")
-	r.HandleFunc("/handouts", putHandout).Methods("PUT")
-	r.HandleFunc("/handouts", deleteHandout).Methods("DELETE")
+	r.HandleFunc("/handouts/{id}", putHandout).Methods("PUT")
+	r.HandleFunc("/handouts/{id}", deleteHandout).Methods("DELETE")
 
 	log.Printf("service started on:%s\n", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {

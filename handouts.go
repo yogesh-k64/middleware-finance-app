@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -63,7 +64,12 @@ func getHandout(w http.ResponseWriter, r *http.Request) {
 	}
 	err = db.QueryRow(GET_HANDOUT_BY_ID, id).Scan(&handout.ID, &handout.Date, &handout.Amount,
 		&handout.CreatedAt, &handout.UpdatedAt)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, HANDOUTS_NOT_FOUND_MSG, http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -96,27 +102,26 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var respHandout Handout
+	var nomineeID interface{}
+	if handout.NomineeId > 0 {
+		nomineeID = handout.NomineeId
+	} else {
+		nomineeID = nil
+	}
 
-	dbErr := db.QueryRow(
+	_, dbErr := db.Exec(
 		CREATE_HANDOUTS,
 		handout.Date,
 		handout.Amount,
 		handout.UserId,
-		handout.NomineeId,
-	).Scan(
-		&respHandout.ID,
-		&respHandout.Date,
-		&respHandout.Amount,
-		&respHandout.CreatedAt,
-		&respHandout.UpdatedAt,
+		nomineeID,
 	)
+
 	if dbErr != nil {
 		http.Error(w, dbErr.Error(), http.StatusInternalServerError)
 		return
 	}
-	resp := DataResp[Handout]{
-		D:   respHandout,
+	resp := MsgResp{
 		Msg: "Handout created successfully",
 	}
 	json.NewEncoder(w).Encode(resp)
@@ -142,6 +147,10 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 	// Execute delete query
 	result, err := db.Exec(DELETE_HANDOUTS, id)
 	if err != nil {
+		if isForeignKeyViolation(err) {
+			http.Error(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -167,14 +176,15 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 func putHandout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	var handout HandoutUpdate
-	err := json.NewDecoder(r.Body).Decode(&handout)
+	err = json.NewDecoder(r.Body).Decode(&handout)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -184,14 +194,20 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	var nomineeID interface{}
+	if handout.NomineeId > 0 {
+		nomineeID = handout.NomineeId
+	} else {
+		nomineeID = nil
+	}
 
 	_, err = db.Exec(
 		UPDATE_HANDOUT,
 		handout.Date,
 		handout.Amount,
-		handout.NomineeId,
+		nomineeID,
 		handout.UserId,
-		handout.ID,
+		id,
 	)
 
 	if err != nil {
