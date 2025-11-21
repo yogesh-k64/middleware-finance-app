@@ -16,16 +16,30 @@ const UPDATE_USER_REFERRAL = "UPDATE users SET referred_by = $1 WHERE id = $2"
 
 const GET_HANDOUTS_WITH_USERS = `
 SELECT 
-    h.id, h.date, h.amount, h.created_at, h.updated_at,
-    u.id, u.address, u.created_at, u.info, u.mobile, u.name, COALESCE(u.referred_by, -1), u.updated_at
+h.id, h.date, h.amount, h.created_at, h.updated_at, h.nominee_id,
+u.id, u.address, u.created_at, u.info, u.mobile, u.name, COALESCE(u.referred_by, -1), u.updated_at,
+nu.id, nu.address, nu.created_at, nu.info, nu.mobile, nu.name, COALESCE(nu.referred_by, -1), nu.updated_at
 FROM handouts h
 JOIN users u ON h.user_id = u.id
+LEFT JOIN users nu ON h.nominee_id = nu.id
 ORDER BY h.date DESC`
 
 const GET_HANDOUT_BY_ID = `SELECT id, date, amount, created_at, updated_at FROM handouts WHERE id = $1`
+
+const GET_USER_HANDOUT = "SELECT id, date, amount, created_at, updated_at FROM handouts WHERE user_id = $1 ORDER BY date DESC"
 
 const CREATE_HANDOUTS = "INSERT INTO handouts (date, amount, user_id, nominee_id) VALUES ($1, $2, $3, $4) RETURNING id, date, amount, created_at, updated_at;"
 
 const DELETE_HANDOUTS = "DELETE FROM handouts WHERE id = $1"
 
 const UPDATE_HANDOUT = `UPDATE handouts SET date = $1, amount = $2, nominee_id = $3, user_id = $4 WHERE id = $5`
+
+const GET_ALL_COLLECTIONS = "SELECT id, date, amount, created_at, updated_at FROM collections ORDER BY id DESC"
+
+const GET_HANDOUT_COLLECTIONS = "SELECT id, date, amount, created_at, updated_at FROM collections WHERE handout_id = $1 ORDER BY date DESC"
+
+const CREATE_COLLECTION = "INSERT INTO collections (date, amount, handout_id) VALUES ($1, $2, $3);"
+
+const DELETE_COLLECTION = "DELETE FROM collections WHERE id = $1"
+
+const UPDATE_COLLECTION = `UPDATE collections SET date = $1, amount = $2, handout_id = $3 WHERE id = $4`

@@ -20,7 +20,7 @@ type Collection struct {
 	CreatedAt time.Time `json:"created_at"`
 	Date      time.Time `json:"date"`
 	ID        int       `json:"id"`
-	TotalPaid int       `json:"totalPaid"`
+	HandoutId int       `json:"handoutId,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
@@ -30,7 +30,12 @@ type Handout struct {
 	Date      time.Time `json:"date"`
 	ID        int       `json:"id"`
 	UpdatedAt time.Time `json:"updated_at"`
-	User      User      `json:"user"`
+}
+
+type HandoutResp struct {
+	Handout Handout `json:"handout"`
+	User    User    `json:"user"`
+	Nominee User    `json:"nominee"`
 }
 
 type HandoutUpdate struct {

@@ -17,3 +17,19 @@ func validateHandout(handout HandoutUpdate) error {
 	}
 	return nil
 }
+
+func validateCollection(collection Collection) error {
+
+	if collection.HandoutId == 0 {
+		return errors.New("handout id cannot be empty")
+	}
+
+	if collection.Date.IsZero() {
+		return errors.New("date cannot be empty")
+	}
+
+	if collection.Amount <= 0 {
+		return errors.New("enter a valid amount")
+	}
+	return nil
+}

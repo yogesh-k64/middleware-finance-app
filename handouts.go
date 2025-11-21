@@ -20,6 +20,69 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	var handouts []HandoutResp
+
+	for rows.Next() {
+		var handoutResp HandoutResp
+		var handout Handout
+		var user User
+		var nominee User
+		var nomineeID sql.NullInt64
+
+		err = rows.Scan(
+			&handout.ID, &handout.Date, &handout.Amount,
+			&handout.CreatedAt, &handout.UpdatedAt, &nomineeID,
+			&user.ID, &user.Address, &user.CreatedAt, &user.Info, &user.Mobile,
+			&user.Name, &user.ReferredBy, &user.UpdatedAt,
+			&nominee.ID, &nominee.Address, &nominee.CreatedAt, &nominee.Info, &nominee.Mobile,
+			&nominee.Name, &nominee.ReferredBy, &nominee.UpdatedAt,
+		)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		handoutResp.Handout = handout
+		handoutResp.User = user
+
+		if nomineeID.Valid && nominee.ID != 0 {
+			handoutResp.Nominee = nominee
+		} else {
+			handoutResp.Nominee = User{}
+		}
+
+		handouts = append(handouts, handoutResp)
+	}
+
+	if err = rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := DataResp[[]HandoutResp]{
+		D:   handouts,
+		Msg: "success",
+	}
+	json.NewEncoder(w).Encode(resp)
+}
+
+func getUserHandouts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db.Query(GET_USER_HANDOUT, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
 	var handouts []Handout
 
 	for rows.Next() {
@@ -28,8 +91,6 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 		err = rows.Scan(
 			&handout.ID, &handout.Date, &handout.Amount,
 			&handout.CreatedAt, &handout.UpdatedAt,
-			&handout.User.ID, &handout.User.Address, &handout.User.CreatedAt, &handout.User.Info, &handout.User.Mobile,
-			&handout.User.Name, &handout.User.ReferredBy, &handout.User.UpdatedAt,
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
