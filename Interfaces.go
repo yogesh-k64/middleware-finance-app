@@ -4,32 +4,32 @@ import "time"
 
 type DataResp[T any] struct {
 	D   T      `json:"data"`
-	Msg string `json:"msg"`
+	Msg string `json:"message"`
 }
 
 type MsgResp struct {
-	Msg string `json:"msg"`
+	Msg string `json:"message"`
 }
 
 type LinkUsersRequest struct {
-	ReferredBy int `json:"referred_by"`
+	ReferredBy int `json:"referredBy"`
 }
 
 type Collection struct {
 	Amount    float64   `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 	Date      time.Time `json:"date"`
 	ID        int       `json:"id"`
 	HandoutId int       `json:"handoutId,omitempty"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type Handout struct {
 	Amount    float64   `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 	Date      time.Time `json:"date"`
 	ID        int       `json:"id"`
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type HandoutResp struct {
@@ -48,11 +48,11 @@ type HandoutUpdate struct {
 
 type User struct {
 	Address    string    `json:"address"`
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt  time.Time `json:"createdAt"`
 	ID         int       `json:"id"`
 	Info       string    `json:"info"`
 	Mobile     int       `json:"mobile"`
 	Name       string    `json:"name"`
-	ReferredBy int       `json:"referred_by"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ReferredBy int       `json:"referredBy"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }

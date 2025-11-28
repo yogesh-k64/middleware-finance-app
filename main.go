@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
@@ -87,8 +88,13 @@ func main() {
 	r.HandleFunc("/collections/{id}", putCollection).Methods("PUT")
 	r.HandleFunc("/collections/{id}", deleteCollection).Methods("DELETE")
 
+	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173", "https://yogesh-k64.github.io"}) // Replace with your frontend origin(s)
+	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	allowedHeaders := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+
+	corsHandler := handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders)(r)
 	log.Printf("service started on:%s\n", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe(":"+port, corsHandler); err != nil {
 
 		log.Fatalf("failed to start server on :%s", port)
 	}

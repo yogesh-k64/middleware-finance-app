@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -14,19 +15,19 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	// Validate required fields
 	if user.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
+		sendErrorResponse(w, "Name is required", http.StatusBadRequest)
 		return
 	}
 
 	if user.Mobile < 1000000000 || user.Mobile > 9999999999 {
-		http.Error(w, "enter a valid mobile number", http.StatusBadRequest)
+		sendErrorResponse(w, "enter a valid mobile number", http.StatusBadRequest)
 		return
 	}
 
@@ -39,7 +40,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		user.Name)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -56,7 +57,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func getAllUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(GET_ALL_USERS)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -76,7 +77,7 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 			&user.ReferredBy,
 			&user.UpdatedAt)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		users = append(users, user)
@@ -86,7 +87,7 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 		D:   users,
 		Msg: SUCCESS_MSG,
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -95,7 +96,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
@@ -103,10 +104,10 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+			sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -124,26 +125,26 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	var user User
 	err = json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	// Validate required fields
 	if user.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
+		sendErrorResponse(w, "Name is required", http.StatusBadRequest)
 		return
 	}
 
 	if user.Mobile < 1000000000 || user.Mobile > 9999999999 {
-		http.Error(w, "Enter a valid mobile number", http.StatusBadRequest)
+		sendErrorResponse(w, "Enter a valid mobile number", http.StatusBadRequest)
 		return
 	}
 
@@ -151,23 +152,25 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	var exists bool
 	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&exists)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
-		http.Error(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
 	// Handle referred_by: if -1, use NULL in database, otherwise use the value
 	var referredBy interface{}
-	if user.ReferredBy == -1 {
+	if user.ReferredBy <= 0 {
 		referredBy = nil
 	} else {
 		referredBy = user.ReferredBy
 	}
 
+	fmt.Printf("referredBy: %#v\n", referredBy)
+	fmt.Printf("userID: %#v\n", userID)
 	// Update user
 	_, err = db.Exec(
 		UPDATE_USER,
@@ -180,7 +183,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -197,7 +200,7 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
@@ -205,12 +208,12 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	var exists bool
 	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&exists)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
-		http.Error(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
@@ -218,10 +221,10 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	_, err = db.Exec(DELETE_USER, userID)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			http.Error(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -237,7 +240,7 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
@@ -245,13 +248,13 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	if userID == request.ReferredBy {
-		http.Error(w, errors.New(SAME_USER_LINK_MSG).Error(), http.StatusBadRequest)
+		sendErrorResponse(w, errors.New(SAME_USER_LINK_MSG).Error(), http.StatusBadRequest)
 		return
 	}
 	// Check if both users exist
@@ -259,30 +262,30 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 
 	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&userExists)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = db.QueryRow(CHECK_USER_EXISTS, request.ReferredBy).Scan(&referredUserExists)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !userExists {
-		http.Error(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
 	if !referredUserExists {
-		http.Error(w, REFERRER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, REFERRER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
 	// Update the user's referred_by field
 	_, err = db.Exec(UPDATE_USER_REFERRAL, request.ReferredBy, userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

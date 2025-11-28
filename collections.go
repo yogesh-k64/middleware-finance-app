@@ -14,7 +14,7 @@ func getCollections(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(GET_ALL_COLLECTIONS)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -29,7 +29,7 @@ func getCollections(w http.ResponseWriter, r *http.Request) {
 			&collection.CreatedAt, &collection.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -37,7 +37,7 @@ func getCollections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -55,13 +55,13 @@ func getHandoutCollections(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	rows, err := db.Query(GET_HANDOUT_COLLECTIONS, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -76,7 +76,7 @@ func getHandoutCollections(w http.ResponseWriter, r *http.Request) {
 			&collection.CreatedAt, &collection.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -84,7 +84,7 @@ func getHandoutCollections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -100,19 +100,19 @@ func createCollection(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allow", http.StatusMethodNotAllowed)
+		sendErrorResponse(w, "Method not allow", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var collection Collection
 	err := json.NewDecoder(r.Body).Decode(&collection)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = validateCollection(collection)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -124,7 +124,7 @@ func createCollection(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if dbErr != nil {
-		http.Error(w, dbErr.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, dbErr.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp := MsgResp{
@@ -141,22 +141,22 @@ func deleteCollection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	if id == 0 {
-		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+		sendErrorResponse(w, "ID parameter is required", http.StatusBadRequest)
 		return
 	}
 
 	_, err = db.Exec(DELETE_COLLECTION, id)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			http.Error(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -172,19 +172,19 @@ func putCollection(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	var collection Collection
 	err = json.NewDecoder(r.Body).Decode(&collection)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = validateCollection(collection)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -197,7 +197,7 @@ func putCollection(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

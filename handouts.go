@@ -15,7 +15,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(GET_HANDOUTS_WITH_USERS)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -38,7 +38,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 			&nominee.Name, &nominee.ReferredBy, &nominee.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -55,7 +55,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -72,13 +72,13 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	rows, err := db.Query(GET_USER_HANDOUT, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -93,7 +93,7 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 			&handout.CreatedAt, &handout.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -101,7 +101,7 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -120,7 +120,7 @@ func getHandout(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 	err = db.QueryRow(GET_HANDOUT_BY_ID, id).Scan(&handout.ID, &handout.Date, &handout.Amount,
@@ -128,10 +128,10 @@ func getHandout(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, HANDOUTS_NOT_FOUND_MSG, http.StatusNotFound)
+			sendErrorResponse(w, HANDOUTS_NOT_FOUND_MSG, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -147,19 +147,19 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allow", http.StatusMethodNotAllowed)
+		sendErrorResponse(w, "Method not allow", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var handout HandoutUpdate
 	err := json.NewDecoder(r.Body).Decode(&handout)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = validateHandout(handout)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -179,7 +179,7 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if dbErr != nil {
-		http.Error(w, dbErr.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, dbErr.Error(), http.StatusInternalServerError)
 		return
 	}
 	resp := MsgResp{
@@ -196,12 +196,12 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	if id == 0 {
-		http.Error(w, "ID parameter is required", http.StatusBadRequest)
+		sendErrorResponse(w, "ID parameter is required", http.StatusBadRequest)
 		return
 	}
 
@@ -209,22 +209,22 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 	result, err := db.Exec(DELETE_HANDOUTS, id)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			http.Error(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Check if any row was affected
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if rowsAffected == 0 {
-		http.Error(w, "Handout not found", http.StatusNotFound)
+		sendErrorResponse(w, "Handout not found", http.StatusNotFound)
 		return
 	}
 
@@ -240,19 +240,19 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, INVALID_ID_MSG, http.StatusBadRequest)
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
 	var handout HandoutUpdate
 	err = json.NewDecoder(r.Body).Decode(&handout)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = validateHandout(handout)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	var nomineeID interface{}
@@ -272,7 +272,7 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

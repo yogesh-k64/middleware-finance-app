@@ -6,7 +6,7 @@ const CREATE_USERS = "INSERT INTO users (address, info, mobile, name) VALUES ($1
 
 const GET_USER_BY_ID = "SELECT id, address, created_at, info, mobile, name, COALESCE(referred_by, -1) as referred_by, updated_at FROM users WHERE id = $1"
 
-const UPDATE_USER = "UPDATE users SET address = $1, info = $2, mobile = $3, name = $4, referred_by = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6"
+const UPDATE_USER = "UPDATE users SET address = $1, info = $2, mobile = $3, name = $4, referred_by = $5 WHERE id = $6"
 
 const DELETE_USER = "DELETE FROM users WHERE id = $1"
 
