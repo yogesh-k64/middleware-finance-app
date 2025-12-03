@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -161,16 +160,6 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle referred_by: if -1, use NULL in database, otherwise use the value
-	var referredBy interface{}
-	if user.ReferredBy <= 0 {
-		referredBy = nil
-	} else {
-		referredBy = user.ReferredBy
-	}
-
-	fmt.Printf("referredBy: %#v\n", referredBy)
-	fmt.Printf("userID: %#v\n", userID)
 	// Update user
 	_, err = db.Exec(
 		UPDATE_USER,
@@ -178,7 +167,6 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		user.Info,
 		user.Mobile,
 		user.Name,
-		referredBy,
 		userID,
 	)
 
