@@ -20,22 +20,17 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var handouts []HandoutResp
+	handouts := []HandoutResp{}
 
 	for rows.Next() {
 		var handoutResp HandoutResp
 		var handout Handout
-		var user User
-		var nominee User
-		var nomineeID sql.NullInt64
+		var user HandoutUserDetails
 
 		err = rows.Scan(
-			&handout.ID, &handout.Date, &handout.Amount,
-			&handout.CreatedAt, &handout.UpdatedAt, &nomineeID,
-			&user.ID, &user.Address, &user.CreatedAt, &user.Info, &user.Mobile,
-			&user.Name, &user.ReferredBy, &user.UpdatedAt,
-			&nominee.ID, &nominee.Address, &nominee.CreatedAt, &nominee.Info, &nominee.Mobile,
-			&nominee.Name, &nominee.ReferredBy, &nominee.UpdatedAt,
+			&handout.ID, &handout.Amount, &handout.Date,
+			&handout.CreatedAt, &handout.UpdatedAt,
+			&user.ID, &user.Name, &user.Mobile,
 		)
 		if err != nil {
 			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -44,13 +39,6 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 
 		handoutResp.Handout = handout
 		handoutResp.User = user
-
-		if nomineeID.Valid && nominee.ID != 0 {
-			handoutResp.Nominee = nominee
-		} else {
-			handoutResp.Nominee = User{}
-		}
-
 		handouts = append(handouts, handoutResp)
 	}
 
@@ -83,7 +71,7 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var handouts []Handout
+	handouts := []Handout{}
 
 	for rows.Next() {
 		var handout Handout
@@ -163,19 +151,11 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nomineeID interface{}
-	if handout.NomineeId > 0 {
-		nomineeID = handout.NomineeId
-	} else {
-		nomineeID = nil
-	}
-
 	_, dbErr := db.Exec(
 		CREATE_HANDOUTS,
 		handout.Date,
 		handout.Amount,
 		handout.UserId,
-		nomineeID,
 	)
 
 	if dbErr != nil {
@@ -209,7 +189,7 @@ func deleteHandout(w http.ResponseWriter, r *http.Request) {
 	result, err := db.Exec(DELETE_HANDOUTS, id)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			sendErrorResponse(w, HANDOUT_COLLECTION_LINK_ERROR_MSG, http.StatusInternalServerError)
 			return
 		}
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -255,18 +235,11 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var nomineeID interface{}
-	if handout.NomineeId > 0 {
-		nomineeID = handout.NomineeId
-	} else {
-		nomineeID = nil
-	}
 
 	_, err = db.Exec(
 		UPDATE_HANDOUT,
 		handout.Date,
 		handout.Amount,
-		nomineeID,
 		handout.UserId,
 		id,
 	)

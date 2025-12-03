@@ -19,13 +19,13 @@ func getCollections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var collections []Collection
+	collections := []Collection{}
 
 	for rows.Next() {
 		var collection Collection
 
 		err = rows.Scan(
-			&collection.ID, &collection.Date, &collection.Amount,
+			&collection.ID, &collection.Date, &collection.Amount, &collection.HandoutId,
 			&collection.CreatedAt, &collection.UpdatedAt,
 		)
 		if err != nil {
@@ -152,10 +152,6 @@ func deleteCollection(w http.ResponseWriter, r *http.Request) {
 
 	_, err = db.Exec(DELETE_COLLECTION, id)
 	if err != nil {
-		if isForeignKeyViolation(err) {
-			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
-			return
-		}
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

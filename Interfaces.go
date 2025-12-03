@@ -33,17 +33,21 @@ type Handout struct {
 }
 
 type HandoutResp struct {
-	Handout Handout `json:"handout"`
-	User    User    `json:"user"`
-	Nominee User    `json:"nominee"`
+	Handout Handout            `json:"handout"`
+	User    HandoutUserDetails `json:"user"`
+}
+
+type HandoutUserDetails struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Mobile int    `json:"mobile"`
 }
 
 type HandoutUpdate struct {
-	Amount    float64   `json:"amount"`
-	Date      time.Time `json:"date"`
-	ID        int       `json:"id"`
-	UserId    int       `json:"userId"`
-	NomineeId int       `json:"nomineeId"`
+	Amount float64   `json:"amount"`
+	Date   time.Time `json:"date"`
+	ID     int       `json:"id"`
+	UserId int       `json:"userId"`
 }
 
 type User struct {
