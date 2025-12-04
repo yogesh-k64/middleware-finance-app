@@ -284,3 +284,48 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+func getReferredByUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
+		return
+	}
+
+	// First get the user to find their referred_by ID
+	user, err := getUserById(userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+			return
+		}
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user has a referrer
+	if user.ReferredBy == 0 || user.ReferredBy == -1 {
+		sendErrorResponse(w, "User has no referrer", http.StatusNotFound)
+		return
+	}
+
+	// Get the referrer's details
+	referrer, err := getUserById(user.ReferredBy)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			sendErrorResponse(w, "Referrer not found", http.StatusNotFound)
+			return
+		}
+		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := DataResp[User]{
+		D:   referrer,
+		Msg: SUCCESS_MSG,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}

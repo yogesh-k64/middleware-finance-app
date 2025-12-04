@@ -74,6 +74,7 @@ func main() {
 	r.HandleFunc("/users", createUser).Methods("POST")
 	r.HandleFunc("/users/{id}", getUser).Methods("GET")
 	r.HandleFunc("/users/{id}/handouts", getUserHandouts).Methods("GET")
+	r.HandleFunc("/users/{id}/referred-by", getReferredByUser).Methods("GET")
 	r.HandleFunc("/users/{id}", updateUser).Methods("PUT")
 	r.HandleFunc("/users/{id}", deleteUser).Methods("DELETE")
 	r.HandleFunc("/users/{id}/referral", linkUserReferral).Methods("POST")
