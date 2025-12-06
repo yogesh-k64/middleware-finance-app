@@ -70,6 +70,8 @@ func main() {
 	}
 	r := mux.NewRouter()
 
+	r.Use(mux.CORSMethodMiddleware(r))
+
 	r.HandleFunc("/users", getAllUsers).Methods("GET")
 	r.HandleFunc("/users", createUser).Methods("POST")
 	r.HandleFunc("/users/{id}", getUser).Methods("GET")
