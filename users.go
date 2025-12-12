@@ -62,7 +62,7 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	var users []User
+	users := []User{}
 
 	for rows.Next() {
 		var user User
