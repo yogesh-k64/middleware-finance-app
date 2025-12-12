@@ -70,7 +70,8 @@ func main() {
 	}
 	r := mux.NewRouter()
 
-	r.Use(mux.CORSMethodMiddleware(r))
+	// commenting this out to use custom CORS settings below
+	// r.Use(mux.CORSMethodMiddleware(r))
 
 	r.HandleFunc("/users", getAllUsers).Methods("GET")
 	r.HandleFunc("/users", createUser).Methods("POST")
@@ -91,7 +92,7 @@ func main() {
 	r.HandleFunc("/collections/{id}", putCollection).Methods("PUT")
 	r.HandleFunc("/collections/{id}", deleteCollection).Methods("DELETE")
 
-	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173", "https://yogesh-k64.github.io"}) // Replace with your frontend origin(s)
+	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173", "https://yogesh-k64.github.io"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	allowedHeaders := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
 
