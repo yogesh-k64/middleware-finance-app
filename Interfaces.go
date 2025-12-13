@@ -29,6 +29,8 @@ type Handout struct {
 	CreatedAt time.Time `json:"createdAt"`
 	Date      time.Time `json:"date"`
 	ID        int       `json:"id"`
+	Status    string    `json:"status"`
+	Bond      bool      `json:"bond"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
@@ -47,6 +49,8 @@ type HandoutUpdate struct {
 	Amount float64   `json:"amount"`
 	Date   time.Time `json:"date"`
 	ID     int       `json:"id"`
+	Status *string   `json:"status,omitempty"`
+	Bond   *bool     `json:"bond,omitempty"`
 	UserId int       `json:"userId"`
 }
 

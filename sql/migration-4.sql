@@ -20,3 +20,11 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ALTER TABLE handouts
 DROP COLUMN nominee_id;
+
+CREATE TYPE order_status AS ENUM ('ACTIVE', 'PENDING', 'CANCELLED', 'COMPLETED');
+
+ALTER TABLE handouts
+ADD COLUMN status order_status DEFAULT 'ACTIVE';
+
+ALTER TABLE handouts
+ADD COLUMN bond BOOLEAN DEFAULT true;

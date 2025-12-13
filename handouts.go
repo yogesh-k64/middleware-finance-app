@@ -29,6 +29,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 
 		err = rows.Scan(
 			&handout.ID, &handout.Amount, &handout.Date,
+			&handout.Status, &handout.Bond,
 			&handout.CreatedAt, &handout.UpdatedAt,
 			&user.ID, &user.Name, &user.Mobile,
 		)
@@ -78,6 +79,7 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 
 		err = rows.Scan(
 			&handout.ID, &handout.Date, &handout.Amount,
+			&handout.Status, &handout.Bond,
 			&handout.CreatedAt, &handout.UpdatedAt,
 		)
 		if err != nil {
@@ -112,7 +114,7 @@ func getHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = db.QueryRow(GET_HANDOUT_BY_ID, id).Scan(&handout.ID, &handout.Date, &handout.Amount,
-		&handout.CreatedAt, &handout.UpdatedAt)
+		&handout.Status, &handout.Bond, &handout.CreatedAt, &handout.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -151,10 +153,22 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Apply default values if not provided
+	status := "ACTIVE"
+	if handout.Status != nil && *handout.Status != "" {
+		status = *handout.Status
+	}
+	bond := true
+	if handout.Bond != nil {
+		bond = *handout.Bond
+	}
+
 	_, dbErr := db.Exec(
 		CREATE_HANDOUTS,
 		handout.Date,
 		handout.Amount,
+		status,
+		bond,
 		handout.UserId,
 	)
 
@@ -236,10 +250,22 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Apply default values if not provided
+	status := "ACTIVE"
+	if handout.Status != nil && *handout.Status != "" {
+		status = *handout.Status
+	}
+	bond := true
+	if handout.Bond != nil {
+		bond = *handout.Bond
+	}
+
 	_, err = db.Exec(
 		UPDATE_HANDOUT,
 		handout.Date,
 		handout.Amount,
+		status,
+		bond,
 		handout.UserId,
 		id,
 	)
