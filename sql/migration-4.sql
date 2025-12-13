@@ -28,3 +28,5 @@ ADD COLUMN status order_status DEFAULT 'ACTIVE';
 
 ALTER TABLE handouts
 ADD COLUMN bond BOOLEAN DEFAULT true;
+
+CREATE INDEX idx_collections_handout_id ON collections(handout_id);
