@@ -75,6 +75,7 @@ func main() {
 
 	// Public routes (no authentication required)
 	r.HandleFunc("/user/login", adminLogin).Methods("POST")
+	r.HandleFunc("/health-check", getHealthCheck).Methods("GET")
 
 	// Protected routes (authentication required)
 	protected := r.PathPrefix("/").Subrouter()
