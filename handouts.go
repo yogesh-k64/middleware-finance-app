@@ -13,7 +13,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	rows, err := db.Query(GET_HANDOUTS_WITH_USERS)
+	rows, err := db.Query(GET_HANDOUTS_WITH_CUSTOMERS)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -25,13 +25,13 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var handoutResp HandoutResp
 		var handout Handout
-		var user HandoutUserDetails
+		var customer HandoutCustomerDetails
 
 		err = rows.Scan(
 			&handout.ID, &handout.Amount, &handout.Date,
 			&handout.Status, &handout.Bond,
 			&handout.CreatedAt, &handout.UpdatedAt,
-			&user.ID, &user.Name, &user.Mobile,
+			&customer.ID, &customer.Name, &customer.Mobile,
 		)
 		if err != nil {
 			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -39,7 +39,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 		}
 
 		handoutResp.Handout = handout
-		handoutResp.User = user
+		handoutResp.Customer = customer
 		handouts = append(handouts, handoutResp)
 	}
 
@@ -55,7 +55,7 @@ func getHandouts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func getUserHandouts(w http.ResponseWriter, r *http.Request) {
+func getCustomerHandouts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	vars := mux.Vars(r)
@@ -65,7 +65,7 @@ func getUserHandouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query(GET_USER_HANDOUT, id)
+	rows, err := db.Query(GET_CUSTOMER_HANDOUTS, id)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -169,7 +169,7 @@ func createHandout(w http.ResponseWriter, r *http.Request) {
 		handout.Amount,
 		status,
 		bond,
-		handout.UserId,
+		handout.CustomerId,
 	)
 
 	if dbErr != nil {
@@ -266,7 +266,7 @@ func putHandout(w http.ResponseWriter, r *http.Request) {
 		handout.Amount,
 		status,
 		bond,
-		handout.UserId,
+		handout.CustomerId,
 		id,
 	)
 

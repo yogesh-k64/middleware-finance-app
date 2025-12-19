@@ -4,8 +4,8 @@ import "errors"
 
 func validateHandout(handout HandoutUpdate) error {
 
-	if handout.UserId == 0 {
-		return errors.New("user cannot be empty")
+	if handout.CustomerId == 0 {
+		return errors.New("customer cannot be empty")
 	}
 
 	if handout.Date.IsZero() {

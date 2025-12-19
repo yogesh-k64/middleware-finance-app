@@ -198,7 +198,7 @@ func putCollection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := MsgResp{
-		Msg: "collection updated successfully",
+		Msg: "Collection updated successfully",
 	}
 	json.NewEncoder(w).Encode(resp)
 }

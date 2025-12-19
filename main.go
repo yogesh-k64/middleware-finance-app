@@ -73,24 +73,43 @@ func main() {
 	// commenting this out to use custom CORS settings below
 	// r.Use(mux.CORSMethodMiddleware(r))
 
-	r.HandleFunc("/users", getAllUsers).Methods("GET")
-	r.HandleFunc("/users", createUser).Methods("POST")
-	r.HandleFunc("/users/{id}", getUser).Methods("GET")
-	r.HandleFunc("/users/{id}/handouts", getUserHandouts).Methods("GET")
-	r.HandleFunc("/users/{id}/referred-by", getReferredByUser).Methods("GET")
-	r.HandleFunc("/users/{id}", updateUser).Methods("PUT")
-	r.HandleFunc("/users/{id}", deleteUser).Methods("DELETE")
-	r.HandleFunc("/users/{id}/referral", linkUserReferral).Methods("POST")
-	r.HandleFunc("/handouts", getHandouts).Methods("GET")
-	r.HandleFunc("/handouts", createHandout).Methods("POST")
-	r.HandleFunc("/handouts/{id}", getHandout).Methods("GET")
-	r.HandleFunc("/handouts/{id}/collections", getHandoutCollections).Methods("GET")
-	r.HandleFunc("/handouts/{id}", putHandout).Methods("PUT")
-	r.HandleFunc("/handouts/{id}", deleteHandout).Methods("DELETE")
-	r.HandleFunc("/collections", getCollections).Methods("GET")
-	r.HandleFunc("/collections", createCollection).Methods("POST")
-	r.HandleFunc("/collections/{id}", putCollection).Methods("PUT")
-	r.HandleFunc("/collections/{id}", deleteCollection).Methods("DELETE")
+	// Public routes (no authentication required)
+	r.HandleFunc("/user/login", adminLogin).Methods("POST")
+
+	// Protected routes (authentication required)
+	protected := r.PathPrefix("/").Subrouter()
+	protected.Use(authMiddleware)
+
+	// Admin routes
+	protected.HandleFunc("/user/register", registerAdmin).Methods("POST")
+	protected.HandleFunc("/user/me", getCurrentAdmin).Methods("GET")
+	protected.HandleFunc("/users", getAllAdmins).Methods("GET")
+	protected.HandleFunc("/users/{id}", updateAdmin).Methods("PUT")
+	protected.HandleFunc("/users/{id}", deleteAdmin).Methods("DELETE")
+
+	// Customer routes (renamed from users for clarity)
+	protected.HandleFunc("/customers", getAllCustomers).Methods("GET")
+	protected.HandleFunc("/customers", createCustomer).Methods("POST")
+	protected.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
+	protected.HandleFunc("/customers/{id}/handouts", getCustomerHandouts).Methods("GET")
+	protected.HandleFunc("/customers/{id}/referred-by", getReferredByCustomer).Methods("GET")
+	protected.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
+	protected.HandleFunc("/customers/{id}", deleteCustomer).Methods("DELETE")
+	protected.HandleFunc("/customers/{id}/referral", linkCustomerReferral).Methods("POST")
+
+	// Handout routes
+	protected.HandleFunc("/handouts", getHandouts).Methods("GET")
+	protected.HandleFunc("/handouts", createHandout).Methods("POST")
+	protected.HandleFunc("/handouts/{id}", getHandout).Methods("GET")
+	protected.HandleFunc("/handouts/{id}/collections", getHandoutCollections).Methods("GET")
+	protected.HandleFunc("/handouts/{id}", putHandout).Methods("PUT")
+	protected.HandleFunc("/handouts/{id}", deleteHandout).Methods("DELETE")
+
+	// Collection routes
+	protected.HandleFunc("/collections", getCollections).Methods("GET")
+	protected.HandleFunc("/collections", createCollection).Methods("POST")
+	protected.HandleFunc("/collections/{id}", putCollection).Methods("PUT")
+	protected.HandleFunc("/collections/{id}", deleteCollection).Methods("DELETE")
 
 	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173", "https://yogesh-k64.github.io"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})

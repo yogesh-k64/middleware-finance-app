@@ -35,26 +35,33 @@ type Handout struct {
 }
 
 type HandoutResp struct {
-	Handout Handout            `json:"handout"`
-	User    HandoutUserDetails `json:"user"`
+	Handout  Handout                `json:"handout"`
+	Customer HandoutCustomerDetails `json:"customer"`
 }
 
-type HandoutUserDetails struct {
+// HandoutCustomerDetails contains basic customer info for handout responses
+type HandoutCustomerDetails struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`
 	Mobile int    `json:"mobile"`
 }
 
+// HandoutUserDetails is an alias for backward compatibility
+// Deprecated: Use HandoutCustomerDetails instead
+type HandoutUserDetails = HandoutCustomerDetails
+
 type HandoutUpdate struct {
-	Amount float64   `json:"amount"`
-	Date   time.Time `json:"date"`
-	ID     int       `json:"id"`
-	Status *string   `json:"status,omitempty"`
-	Bond   *bool     `json:"bond,omitempty"`
-	UserId int       `json:"userId"`
+	Amount     float64   `json:"amount"`
+	Date       time.Time `json:"date"`
+	ID         int       `json:"id"`
+	Status     *string   `json:"status,omitempty"`
+	Bond       *bool     `json:"bond,omitempty"`
+	CustomerId int       `json:"customerId"`
 }
 
-type User struct {
+// Customer represents a customer/client in the finance system
+// Renamed from "User" to avoid confusion with admin authentication
+type Customer struct {
 	Address    string    `json:"address"`
 	CreatedAt  time.Time `json:"createdAt"`
 	ID         int       `json:"id"`
@@ -64,3 +71,7 @@ type User struct {
 	ReferredBy int       `json:"referredBy"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
+
+// User is an alias for Customer to maintain backward compatibility
+// Deprecated: Use Customer instead
+type User = Customer

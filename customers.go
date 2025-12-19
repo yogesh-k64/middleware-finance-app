@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func createUser(w http.ResponseWriter, r *http.Request) {
-	var user User
-	err := json.NewDecoder(r.Body).Decode(&user)
+func createCustomer(w http.ResponseWriter, r *http.Request) {
+	var customer Customer
+	err := json.NewDecoder(r.Body).Decode(&customer)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
@@ -20,32 +20,31 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Validate required fields
-	if user.Name == "" {
+	if customer.Name == "" {
 		sendErrorResponse(w, "Name is required", http.StatusBadRequest)
 		return
 	}
 
-	if user.Mobile < 1000000000 || user.Mobile > 9999999999 {
-		sendErrorResponse(w, "enter a valid mobile number", http.StatusBadRequest)
+	if customer.Mobile < 1000000000 || customer.Mobile > 9999999999 {
+		sendErrorResponse(w, "Enter a valid mobile number", http.StatusBadRequest)
 		return
 	}
 
-	// Insert user - we don't care about the result
+	// Insert customer
 	_, err = db.Exec(
-		CREATE_USERS,
-		user.Address,
-		user.Info,
-		user.Mobile,
-		user.Name)
+		CREATE_CUSTOMER,
+		customer.Address,
+		customer.Info,
+		customer.Mobile,
+		customer.Name)
 
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Simple string response
 	resp := MsgResp{
-		Msg: "User created successfully",
+		Msg: "Customer created successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -53,8 +52,8 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func getAllUsers(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query(GET_ALL_USERS)
+func getAllCustomers(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(GET_ALL_CUSTOMERS)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -62,56 +61,56 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	users := []User{}
+	customers := []Customer{}
 
 	for rows.Next() {
-		var user User
+		var customer Customer
 		err := rows.Scan(
-			&user.ID,
-			&user.Address,
-			&user.CreatedAt,
-			&user.Info,
-			&user.Mobile,
-			&user.Name,
-			&user.ReferredBy,
-			&user.UpdatedAt)
+			&customer.ID,
+			&customer.Address,
+			&customer.CreatedAt,
+			&customer.Info,
+			&customer.Mobile,
+			&customer.Name,
+			&customer.ReferredBy,
+			&customer.UpdatedAt)
 		if err != nil {
 			sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		users = append(users, user)
+		customers = append(customers, customer)
 	}
 
-	resp := DataResp[[]User]{
-		D:   users,
+	resp := DataResp[[]Customer]{
+		D:   customers,
 		Msg: SUCCESS_MSG,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
-func getUser(w http.ResponseWriter, r *http.Request) {
+func getCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get ID from mux
 	vars := mux.Vars(r)
-	userID, err := strconv.Atoi(vars["id"])
+	customerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
-	user, err := getUserById(userID)
+	customer, err := getCustomerById(customerID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+			sendErrorResponse(w, CUSTOMER_NOT_FOUND_MSG, http.StatusNotFound)
 			return
 		}
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resp := DataResp[User]{
-		D:   user,
+	resp := DataResp[Customer]{
+		D:   customer,
 		Msg: SUCCESS_MSG,
 	}
 
@@ -119,17 +118,17 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func updateUser(w http.ResponseWriter, r *http.Request) {
+func updateCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get ID from mux
 	vars := mux.Vars(r)
-	userID, err := strconv.Atoi(vars["id"])
+	customerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
-	var user User
-	err = json.NewDecoder(r.Body).Decode(&user)
+	var customer Customer
+	err = json.NewDecoder(r.Body).Decode(&customer)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
@@ -137,37 +136,37 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Validate required fields
-	if user.Name == "" {
+	if customer.Name == "" {
 		sendErrorResponse(w, "Name is required", http.StatusBadRequest)
 		return
 	}
 
-	if user.Mobile < 1000000000 || user.Mobile > 9999999999 {
+	if customer.Mobile < 1000000000 || customer.Mobile > 9999999999 {
 		sendErrorResponse(w, "Enter a valid mobile number", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user exists first
+	// Check if customer exists first
 	var exists bool
-	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&exists)
+	err = db.QueryRow(CHECK_CUSTOMER_EXISTS, customerID).Scan(&exists)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
-		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, CUSTOMER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
-	// Update user
+	// Update customer
 	_, err = db.Exec(
-		UPDATE_USER,
-		user.Address,
-		user.Info,
-		user.Mobile,
-		user.Name,
-		userID,
+		UPDATE_CUSTOMER,
+		customer.Address,
+		customer.Info,
+		customer.Mobile,
+		customer.Name,
+		customerID,
 	)
 
 	if err != nil {
@@ -176,40 +175,40 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := MsgResp{
-		Msg: "User updated successfully",
+		Msg: "Customer updated successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request) {
+func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 	// Get ID from mux
 	vars := mux.Vars(r)
-	userID, err := strconv.Atoi(vars["id"])
+	customerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
-	// Check if user exists first
+	// Check if customer exists first
 	var exists bool
-	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&exists)
+	err = db.QueryRow(CHECK_CUSTOMER_EXISTS, customerID).Scan(&exists)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
-		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+		sendErrorResponse(w, CUSTOMER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
-	// Delete user
-	_, err = db.Exec(DELETE_USER, userID)
+	// Delete customer
+	_, err = db.Exec(DELETE_CUSTOMER, customerID)
 	if err != nil {
 		if isForeignKeyViolation(err) {
-			sendErrorResponse(w, USER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
+			sendErrorResponse(w, CUSTOMER_HANDOUT_LINK_ERROR_MSG, http.StatusInternalServerError)
 			return
 		}
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -217,16 +216,16 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := MsgResp{
-		Msg: "User deleted successfully",
+		Msg: "Customer deleted successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
 
-func linkUserReferral(w http.ResponseWriter, r *http.Request) {
+func linkCustomerReferral(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	userID, err := strconv.Atoi(vars["id"])
+	customerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
@@ -241,37 +240,37 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if userID == request.ReferredBy {
-		sendErrorResponse(w, errors.New(SAME_USER_LINK_MSG).Error(), http.StatusBadRequest)
+	if customerID == request.ReferredBy {
+		sendErrorResponse(w, errors.New(SAME_CUSTOMER_LINK_MSG).Error(), http.StatusBadRequest)
 		return
 	}
-	// Check if both users exist
-	var userExists, referredUserExists bool
+	// Check if both customers exist
+	var customerExists, referredCustomerExists bool
 
-	err = db.QueryRow(CHECK_USER_EXISTS, userID).Scan(&userExists)
+	err = db.QueryRow(CHECK_CUSTOMER_EXISTS, customerID).Scan(&customerExists)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = db.QueryRow(CHECK_USER_EXISTS, request.ReferredBy).Scan(&referredUserExists)
+	err = db.QueryRow(CHECK_CUSTOMER_EXISTS, request.ReferredBy).Scan(&referredCustomerExists)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if !userExists {
-		sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+	if !customerExists {
+		sendErrorResponse(w, CUSTOMER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
-	if !referredUserExists {
+	if !referredCustomerExists {
 		sendErrorResponse(w, REFERRER_NOT_FOUND_MSG, http.StatusNotFound)
 		return
 	}
 
-	// Update the user's referred_by field
-	_, err = db.Exec(UPDATE_USER_REFERRAL, request.ReferredBy, userID)
+	// Update the customer's referred_by field
+	_, err = db.Exec(UPDATE_CUSTOMER_REFERRAL, request.ReferredBy, customerID)
 	if err != nil {
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -285,33 +284,33 @@ func linkUserReferral(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func getReferredByUser(w http.ResponseWriter, r *http.Request) {
+func getReferredByCustomer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	userID, err := strconv.Atoi(vars["id"])
+	customerID, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		sendErrorResponse(w, INVALID_ID_MSG, http.StatusBadRequest)
 		return
 	}
 
-	// First get the user to find their referred_by ID
-	user, err := getUserById(userID)
+	// First get the customer to find their referred_by ID
+	customer, err := getCustomerById(customerID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			sendErrorResponse(w, USER_NOT_FOUND_MSG, http.StatusNotFound)
+			sendErrorResponse(w, CUSTOMER_NOT_FOUND_MSG, http.StatusNotFound)
 			return
 		}
 		sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Check if user has a referrer
-	if user.ReferredBy == 0 || user.ReferredBy == -1 {
-		sendErrorResponse(w, "User has no referrer", http.StatusNotFound)
+	// Check if customer has a referrer
+	if customer.ReferredBy == 0 || customer.ReferredBy == -1 {
+		sendErrorResponse(w, "Customer has no referrer", http.StatusNotFound)
 		return
 	}
 
 	// Get the referrer's details
-	referrer, err := getUserById(user.ReferredBy)
+	referrer, err := getCustomerById(customer.ReferredBy)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			sendErrorResponse(w, "Referrer not found", http.StatusNotFound)
@@ -321,7 +320,7 @@ func getReferredByUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := DataResp[User]{
+	resp := DataResp[Customer]{
 		D:   referrer,
 		Msg: SUCCESS_MSG,
 	}
