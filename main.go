@@ -115,8 +115,9 @@ func main() {
 	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173", "https://yogesh-k64.github.io"})
 	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	allowedHeaders := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	allowCredentials := handlers.AllowCredentials()
 
-	corsHandler := handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders)(r)
+	corsHandler := handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders, allowCredentials)(r)
 	log.Printf("service started on:%s\n", port)
 	if err := http.ListenAndServe(":"+port, corsHandler); err != nil {
 
